@@ -4,44 +4,48 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>每日員工點名系統</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft JhengHei', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
-      min-height: 100vh;
+      font-family: 'Microsoft JhengHei', sans-serif;
+      background: #f0f4f8;
+      padding: 2rem;
     }
     .container {
       max-width: 960px;
       margin: auto;
-      padding: 2rem;
       background: white;
+      padding: 2rem;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
     h1 {
       text-align: center;
       color: #1f2937;
+    }
+    .form-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
       margin-bottom: 1rem;
     }
-    .rollcall-form input, .rollcall-form select {
+    input, select {
       padding: 0.5rem;
-      margin-bottom: 1rem;
-      width: 100%;
+      font-size: 1rem;
+      flex: 1 1 200px;
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    .rollcall-form button {
+    button {
       padding: 0.5rem 1rem;
-      background: #3b82f6;
+      background: #2563eb;
       color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
     }
-    .rollcall-form button:hover {
-      background: #2563eb;
+    button:hover {
+      background: #1e40af;
     }
     table {
       width: 100%;
@@ -49,74 +53,132 @@
       margin-top: 2rem;
     }
     th, td {
-      padding: 0.75rem;
       border: 1px solid #ddd;
+      padding: 0.75rem;
       text-align: left;
     }
     th {
-      background: #f9fafb;
+      background-color: #e5e7eb;
     }
-    .status-present { color: green; }
-    .status-late { color: orange; }
-    .status-leave { color: blue; }
-    .status-absent { color: red; }
+    .actions {
+      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>每日員工點名系統</h1>
-    <form class="rollcall-form" onsubmit="event.preventDefault(); addEmployee()">
-      <input type="text" id="empId" placeholder="員工編號" required />
-      <input type="text" id="empName" placeholder="員工姓名" required />
+    <div class="form-group">
+      <input type="text" id="empId" placeholder="員工編號">
+      <input type="text" id="empName" placeholder="員工姓名">
       <select id="empStatus">
         <option value="present">出席</option>
         <option value="late">遲到</option>
         <option value="leave">請假</option>
         <option value="absent">曠職</option>
       </select>
-      <button type="submit">加入點名</button>
-    </form>
-    <table>
-      <thead>
-        <tr>
-          <th>員工編號</th>
-          <th>姓名</th>
-          <th>狀態</th>
-        </tr>
-      </thead>
-      <tbody id="employeeList"></tbody>
-    </table>
+      <input type="text" id="recorder" placeholder="點名人">
+      <button onclick="addEmployee()">加入</button>
+    </div>
+
+    <div class="actions">
+      <button onclick="exportPDF()">匯出 PDF</button>
+      <button onclick="clearAll()">清空資料</button>
+    </div>
+
+    <div id="rollcallContent">
+      <table>
+        <thead>
+          <tr>
+            <th>員工編號</th>
+            <th>姓名</th>
+            <th>狀態</th>
+            <th>點名人</th>
+            <th>日期</th>
+          </tr>
+        </thead>
+        <tbody id="employeeList"></tbody>
+      </table>
+    </div>
   </div>
+
   <script>
-    const employeeList = document.getElementById('employeeList');
+    const empList = document.getElementById("employeeList");
+
+    function loadData() {
+      const data = JSON.parse(localStorage.getItem("rollcall") || "[]");
+      empList.innerHTML = "";
+      data.forEach(item => addRow(item, false));
+    }
+
+    function saveData() {
+      const rows = [...empList.children].map(row => {
+        return {
+          id: row.children[0].innerText,
+          name: row.children[1].innerText,
+          status: row.children[2].innerText,
+          recorder: row.children[3].innerText,
+          date: row.children[4].innerText,
+        };
+      });
+      localStorage.setItem("rollcall", JSON.stringify(rows));
+    }
 
     function addEmployee() {
-      const id = document.getElementById('empId').value.trim();
-      const name = document.getElementById('empName').value.trim();
-      const status = document.getElementById('empStatus').value;
+      const id = document.getElementById("empId").value.trim();
+      const name = document.getElementById("empName").value.trim();
+      const status = document.getElementById("empStatus").value;
+      const recorder = document.getElementById("recorder").value.trim();
+      const date = new Date().toLocaleDateString();
 
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${id}</td>
-        <td>${name}</td>
-        <td class="status-${status}">${getStatusLabel(status)}</td>
-      `;
+      if (!id || !name || !recorder) return alert("請填寫所有欄位");
 
-      employeeList.appendChild(row);
+      const statusLabel = {
+        present: "出席",
+        late: "遲到",
+        leave: "請假",
+        absent: "曠職"
+      }[status];
 
-      document.getElementById('empId').value = '';
-      document.getElementById('empName').value = '';
+      const item = { id, name, status: statusLabel, recorder, date };
+      addRow(item, true);
     }
 
-    function getStatusLabel(status) {
-      switch (status) {
-        case 'present': return '出席';
-        case 'late': return '遲到';
-        case 'leave': return '請假';
-        case 'absent': return '曠職';
-        default: return '';
+    function addRow(data, save = true) {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${data.id}</td>
+        <td>${data.name}</td>
+        <td>${data.status}</td>
+        <td>${data.recorder}</td>
+        <td>${data.date}</td>
+      `;
+      empList.appendChild(row);
+      if (save) saveData();
+    }
+
+    function exportPDF() {
+      const element = document.getElementById("rollcallContent");
+      const opt = {
+        margin: 0.5,
+        filename: `點名紀錄_${new Date().toLocaleDateString()}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "in", format: "a4", orientation: "portrait" }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+
+    function clearAll() {
+      if (confirm("確定要清除所有資料嗎？")) {
+        localStorage.removeItem("rollcall");
+        empList.innerHTML = "";
       }
     }
+
+    window.onload = loadData;
   </script>
 </body>
 </html>
