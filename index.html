@@ -1,153 +1,127 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>每日員工點名系統</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft JhengHei', sans-serif;
-      background-color: #f1f5f9;
-      margin: 0;
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f2f6fc;
       padding: 2rem;
     }
-    .container {
-      max-width: 960px;
-      margin: auto;
-      background: #fff;
-      border-radius: 10px;
-      padding: 2rem;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    .clock {
+      font-size: 1.25rem;
+      color: #666;
     }
-    h1 {
-      text-align: center;
-      color: #1e293b;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1.5rem;
-    }
-    th, td {
-      padding: 0.75rem;
-      border: 1px solid #e2e8f0;
-      text-align: center;
-    }
-    th {
-      background-color: #f8fafc;
-      color: #1e293b;
-    }
-    button {
-      padding: 0.4rem 0.8rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin: 0 2px;
-    }
-    .present { background-color: #22c55e; color: white; }
-    .leave { background-color: #3b82f6; color: white; }
-    .absent { background-color: #ef4444; color: white; }
-    .controls {
-      margin-top: 1rem;
-      text-align: center;
-    }
-    .controls button {
-      background-color: #1e40af;
+    .status-box {
+      border-radius: 0.5rem;
       color: white;
-      margin: 0 0.5rem;
+      text-align: center;
+      padding: 1rem;
+      font-size: 1.2rem;
     }
+    .status-出席 { background-color: #28a745; }
+    .status-遲到 { background-color: #ffc107; color: #000; }
+    .status-請假 { background-color: #007bff; }
+    .status-曠職 { background-color: #dc3545; }
+    .status-總人數 { background-color: #343a40; }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <h1>每日員工點名系統</h1>
-    <label for="caller">點名人：<input type="text" id="caller" placeholder="請輸入點名人"></label>
-    <div class="controls">
-      <button onclick="exportPDF()">匯出 PDF</button>
-      <button onclick="clearData()">清空資料</button>
+    <h2 class="text-center mb-4">每日員工點名系統</h2>
+
+    <div class="text-center mb-3">
+      <div id="dateDisplay"></div>
+      <div class="clock" id="clock"></div>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>員工編號</th>
-          <th>姓名</th>
-          <th>部門</th>
-          <th>狀態</th>
-          <th>點名人</th>
-          <th>時間</th>
-        </tr>
-      </thead>
-      <tbody id="employeeTable"></tbody>
-    </table>
+
+    <div class="mb-3 row">
+      <label class="col-sm-2 col-form-label">選擇點名人</label>
+      <div class="col-sm-4">
+        <select id="signerSelect" class="form-select">
+          <option selected>請選擇點名人</option>
+          <option>吳俊彥</option>
+          <option>吳淑蓮</option>
+          <!-- 其他點名人 -->
+        </select>
+      </div>
+      <div class="col-sm-6">
+        <div>今日點名人：<span id="selectedSigner">尚未選擇</span></div>
+        <div>點名時間：<span id="signTime">--:--</span></div>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <button class="btn btn-danger me-2" onclick="setSession('上午')">☀️ 早上點名</button>
+      <button class="btn btn-primary me-2" onclick="setSession('中午')">🍱 中午點名</button>
+      <button class="btn btn-dark me-2" onclick="summaryView()">📊 總覽</button>
+      <button class="btn btn-purple" onclick="weekSummary()">🗓️ 周統計</button>
+    </div>
+
+    <div class="mb-4">
+      當前時段：<strong id="currentSession">早上點名</strong>
+    </div>
+
+    <div class="row text-white mb-4">
+      <div class="col status-box status-出席">已出席<br><span id="count出席">0</span></div>
+      <div class="col status-box status-遲到">遲到<br><span id="count遲到">0</span></div>
+      <div class="col status-box status-請假">請假<br><span id="count請假">0</span></div>
+      <div class="col status-box status-曠職">曠職<br><span id="count曠職">0</span></div>
+      <div class="col status-box status-總人數">總人數<br><span id="count總人數">49</span></div>
+    </div>
+
+    <div id="app">員工資料區塊放這裡（後續繼續補上 Vue 或 JS 員工列表邏輯）</div>
+
+    <div class="mt-4">
+      <button class="btn btn-success" onclick="exportPDF()">匯出 PDF</button>
+      <button class="btn btn-secondary" onclick="clearData()">重新選擇</button>
+    </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    const employees = [
-      ["0011","邱瑞統","模發部"],["0004","陳水波","模發部"],["0400","趙玉芬","模發部"],["0405","葉倢羽","模發部"],["0494","王朋楹","模發部"],["0531","許嘉紓","模發部"],["0538","何文泰","模發部"],
-      ["0328","賴榮樂","基材部"],["0495","賴致錡","基材部"],["0507","阿發","基材部"],["0517","黎文全","基材部"],["0541","范庭進","基材部"],["0559","阮維峰","基材部"],["0663","伸迪","基材部"],
-      ["0042","蕭景池","包裝部"],["0016","施妙菁","包裝部"],["V002","李慧玲","包裝部"],["0003","吳淑美","包裝部"],["0152","陳媛玲","包裝部"],["0287","曹巧伶","包裝部"],["0482","朱珮菱","包裝部"],["0511","文氏雪貞","包裝部"],
-      ["0012","黃秀鉗","生產部"],["0226","阮氏李","生產部"],["0402","蔡鴻模","管理部"],["0017","洪姃廷","管理部"],["0297","陳淑鸞","管理部"],["0304","吳淑蓮","生產部"],["0473","陳婷媚","管理部"],["0514","陳姿蓉","管理部"],["0515","陳佳宜","生產部"],
-      ["0552","陳允薰","生產部"],["0399","豆氏劉","生產部"],["0465","施俞宣","生產部"],["0479","希蒂","生產部"],["0487","尤妮","生產部"],["0513","斐氏秋","生產部"],["0519","曹孜孜","生產部"],["0520","莊凡潔","生產部"],["0526","黃氏玲","生產部"],["0527","阮氏夢","生產部"],["0533","陶氏金銀","生產部"],
-      ["0539","阮氏然","生產部"],["0547","團氏月","生產部"],["0548","河氏燕","生產部"],["0555","押氏通","生產部"],["0660","范氏黃秋","生產部"],["0661","陳氏心","生產部"],["0662","范氏梅","生產部"]
-    ];
+    function updateClock() {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    const table = document.getElementById('employeeTable');
-    const saved = JSON.parse(localStorage.getItem('rollcall') || '{}');
+    function updateDate() {
+      const days = ['星期日', '一', '二', '三', '四', '五', '六'];
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const date = now.getDate();
+      const day = days[now.getDay()];
+      document.getElementById('dateDisplay').textContent = `${year}年${month}月${date}日 ${day}`;
+    }
+    updateDate();
 
-    employees.forEach(([id, name, dept]) => {
-      const tr = document.createElement('tr');
-      const caller = document.getElementById('caller').value;
-      const savedRow = saved[id];
-      tr.innerHTML = `
-        <td>${id}</td>
-        <td>${name}</td>
-        <td>${dept}</td>
-        <td>
-          <button class="present" onclick="mark('${id}', '出席')">出席</button>
-          <button class="leave" onclick="mark('${id}', '請假')">請假</button>
-          <button class="absent" onclick="mark('${id}', '曠職')">曠職</button>
-        </td>
-        <td>${savedRow ? savedRow.caller : ''}</td>
-        <td>${savedRow ? savedRow.time : ''}</td>
-      `;
-      tr.id = 'row-' + id;
-      table.appendChild(tr);
+    document.getElementById('signerSelect').addEventListener('change', function () {
+      const signer = this.value;
+      document.getElementById('selectedSigner').textContent = signer;
+      const now = new Date();
+      const time = now.toTimeString().substring(0, 5);
+      document.getElementById('signTime').textContent = time;
     });
 
-    function mark(id, status) {
-      const caller = document.getElementById('caller').value.trim();
-      if (!caller) return alert('請輸入點名人');
-      const time = new Date().toLocaleString('zh-TW');
-      const row = document.getElementById('row-' + id);
-      row.cells[3].innerHTML = status;
-      row.cells[4].innerText = caller;
-      row.cells[5].innerText = time;
-      saved[id] = { status, caller, time };
-      localStorage.setItem('rollcall', JSON.stringify(saved));
+    function setSession(session) {
+      document.getElementById('currentSession').textContent = session + '點名';
     }
-
-    function exportPDF() {
-      import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(({ jsPDF }) => {
-        const doc = new jsPDF();
-        doc.text("每日員工點名紀錄", 10, 10);
-        let y = 20;
-        for (const id in saved) {
-          const emp = employees.find(e => e[0] === id);
-          const row = saved[id];
-          doc.text(`${emp[0]} ${emp[1]} (${emp[2]}) - ${row.status} by ${row.caller} at ${row.time}`, 10, y);
-          y += 10;
-        }
-        doc.save('rollcall.pdf');
-      });
-    }
-
-    function clearData() {
-      if (confirm('確定要清除所有資料？')) {
-        localStorage.removeItem('rollcall');
-        location.reload();
-      }
-    }
+    function summaryView() { alert('總覽功能尚未建置'); }
+    function weekSummary() { alert('周統計功能尚未建置'); }
+    function exportPDF() { alert('PDF 匯出功能尚未建置'); }
+    function clearData() { location.reload(); }
   </script>
 </body>
+
 </html>
