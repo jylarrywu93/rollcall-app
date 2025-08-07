@@ -1,146 +1,237 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>每日員工點名系統</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
     body {
-      background-color: #f3f6fb;
-      font-family: 'Microsoft JhengHei', sans-serif;
+      font-family: "Microsoft JhengHei", sans-serif;
+      background-color: #f0f4fa;
+      margin: 0;
+      padding: 20px;
     }
+
     h1 {
-      margin: 30px 0;
-      font-weight: bold;
       text-align: center;
-    }
-    .clock {
-      text-align: center;
-      font-size: 1.2rem;
-      margin-bottom: 20px;
-    }
-    .section-title {
-      font-weight: bold;
-      margin-top: 30px;
+      font-size: 32px;
       margin-bottom: 10px;
+    }
+
+    .datetime {
       text-align: center;
+      margin-bottom: 30px;
+      font-size: 18px;
+      color: #333;
     }
-    .status-box {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin: 20px 0;
+
+    .section {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
     }
-    .status-box .card {
-      flex: 1;
-      max-width: 150px;
-      text-align: center;
-      font-weight: bold;
+
+    .section h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
     }
-    .status-box .card .card-body {
-      font-size: 1.5rem;
+
+    select,
+    button,
+    input {
+      padding: 8px;
+      font-size: 14px;
+      margin: 5px;
+      border-radius: 5px;
     }
+
+    button {
+      cursor: pointer;
+    }
+
+    .status-buttons button {
+      margin-right: 5px;
+    }
+
     table {
-      background-color: white;
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    table th,
+    table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .stat-boxes {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+    }
+
+    .stat {
+      flex: 1;
+      text-align: center;
+      padding: 15px;
+      margin: 5px;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 18px;
+    }
+
+    .green {
+      background-color: #28a745;
+    }
+
+    .yellow {
+      background-color: #ffc107;
+      color: #000;
+    }
+
+    .blue {
+      background-color: #007bff;
+    }
+
+    .red {
+      background-color: #dc3545;
+    }
+
+    .dark {
+      background-color: #343a40;
     }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>每日員工點名系統</h1>
+  <h1>每日員工點名系統</h1>
 
-    <div class="clock">
-      <div id="date"></div>
-      <div id="time"></div>
-    </div>
-
-    <div class="section-title">點名人員選擇</div>
-    <div class="row justify-content-center mb-4">
-      <div class="col-md-3">
-        <select id="rollcallBy" class="form-select">
-          <option selected>請選擇點名人</option>
-          <option>吳俊彥</option>
-          <option>淑蓮</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <button class="btn btn-dark w-100" onclick="resetRollcall()">重新選擇</button>
-      </div>
-    </div>
-
-    <div class="section-title">點名時段選擇</div>
-    <div class="d-flex justify-content-center mb-4">
-      <button class="btn btn-danger me-2">☀️ 早上點名</button>
-      <button class="btn btn-primary me-2">🕛 中午點名</button>
-      <button class="btn btn-secondary me-2">📊 總覽</button>
-      <button class="btn btn-purple">🗓️ 周統計</button>
-    </div>
-
-    <div class="status-box">
-      <div class="card border-success">
-        <div class="card-body text-success">已出席<br><span>0</span></div>
-      </div>
-      <div class="card border-warning">
-        <div class="card-body text-warning">遲到<br><span>0</span></div>
-      </div>
-      <div class="card border-primary">
-        <div class="card-body text-primary">請假<br><span>0</span></div>
-      </div>
-      <div class="card border-danger">
-        <div class="card-body text-danger">曠職<br><span>0</span></div>
-      </div>
-      <div class="card border-dark">
-        <div class="card-body text-dark">總人數<br><span>49</span></div>
-      </div>
-    </div>
-
-    <table class="table table-bordered">
-      <thead class="table-light">
-        <tr>
-          <th>員工編號</th>
-          <th>姓名</th>
-          <th>部門</th>
-          <th>點名狀態</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody id="employeeTable">
-        <tr>
-          <td>0011</td>
-          <td>邱瑞統</td>
-          <td>模發部</td>
-          <td>未點名</td>
-          <td>
-            <button class="btn btn-outline-success btn-sm">出席</button>
-            <button class="btn btn-outline-primary btn-sm">請假</button>
-            <button class="btn btn-outline-danger btn-sm">曠職</button>
-          </td>
-        </tr>
-        <!-- 其餘人員可用 JS 動態渲染填入 -->
-      </tbody>
-    </table>
-
-    <div class="text-center mb-4">
-      <button class="btn btn-info">匯出 PDF</button>
-    </div>
+  <div class="datetime">
+    <div id="currentDate"></div>
+    <div id="currentTime"></div>
   </div>
 
-  <script>
-    function updateClock() {
-      const now = new Date();
-      const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-      document.getElementById('date').textContent =
-        `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${days[now.getDay()]}`;
-      document.getElementById('time').textContent =
-        now.toLocaleTimeString('zh-TW', { hour12: false });
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
+  <div class="section">
+    <h2>點名人員選擇</h2>
+    <label>選擇點名人
+      <select id="signerSelect">
+        <option value="">請選擇點名人</option>
+        <option value="吳俊彥">吳俊彥</option>
+        <option value="王小明">王小明</option>
+      </select>
+    </label>
+    <span>今日點名人：<span id="currentSigner">尚未選擇</span></span>
+    <span style="margin-left:20px">點名時間：<span id="signTime">--:--</span></span>
+    <button onclick="resetSigner()">重新選擇</button>
+  </div>
 
-    function resetRollcall() {
-      document.getElementById('rollcallBy').selectedIndex = 0;
+  <div class="section">
+    <h2>點名時段選擇</h2>
+    <button style="background:#ff5f2e;color:#fff" onclick="setSession('早上')">☀️ 早上點名</button>
+    <button style="background:#2670ec;color:#fff" onclick="setSession('中午')">🍛 中午點名</button>
+    <button style="background:#444;color:#fff" onclick="setSession('總覽')">📊 總覽</button>
+    <button style="background:#a341d1;color:#fff" onclick="setSession('統計')">📅 周統計</button>
+    <p>目前時段：<span id="session">早上點名</span></p>
+  </div>
+
+  <div class="stat-boxes">
+    <div class="stat green">已出席<br><span id="attend">0</span></div>
+    <div class="stat yellow">遲到<br><span id="late">0</span></div>
+    <div class="stat blue">請假<br><span id="leave">0</span></div>
+    <div class="stat red">曠職<br><span id="absent">49</span></div>
+    <div class="stat dark">總人數<br><span id="total">49</span></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>員工編號</th>
+        <th>姓名</th>
+        <th>部門</th>
+        <th>點名狀態</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="employeeTable">
+      <!-- 員工資料將由 JS 插入 -->
+    </tbody>
+  </table>
+
+  <script>
+    const employees = [
+      ["0011", "邱瑞統", "模發部"], ["0004", "陳水波", "模發部"], ["0400", "趙玉芬", "模發部"],
+      ["0405", "葉倢羽", "模發部"], ["0494", "王朋楹", "模發部"], ["0531", "許嘉紓", "模發部"],
+      ["0538", "何文泰", "模發部"], ["0328", "賴榮樂", "基材部"], ["0495", "賴致錡", "基材部"],
+      ["0507", "阿發", "基材部"], ["0517", "黎文全", "基材部"], ["0541", "范庭進", "基材部"],
+      ["0559", "阮維峰", "基材部"], ["0663", "伸迪", "基材部"], ["0042", "蕭景池", "包裝部"],
+      ["0016", "施妙菁", "包裝部"], ["V002", "李慧玲", "包裝部"], ["0003", "吳淑美", "包裝部"],
+      ["0152", "陳媛玲", "包裝部"], ["0287", "曹巧伶", "包裝部"], ["0482", "朱珮菱", "包裝部"],
+      ["0511", "文氏雪貞", "包裝部"], ["0012", "黃秀鉗", "生產部"], ["0226", "阮氏李", "生產部"],
+      ["0402", "蔡鴻模", "管理部"], ["0017", "洪姃廷", "管理部"], ["0297", "陳淑鸞", "管理部"],
+      ["0304", "吳淑蓮", "生產部"], ["0473", "陳婷媚", "管理部"], ["0514", "陳姿蓉", "管理部"],
+      ["0515", "陳佳宜", "生產部"], ["0552", "陳允薰", "生產部"], ["0399", "豆氏劉", "生產部"],
+      ["0465", "施俞宣", "生產部"], ["0479", "希蒂", "生產部"], ["0487", "尤妮", "生產部"],
+      ["0513", "斐氏秋", "生產部"], ["0519", "曹孜孜", "生產部"], ["0520", "莊凡潔", "生產部"],
+      ["0526", "黃氏玲", "生產部"], ["0527", "阮氏夢", "生產部"], ["0533", "陶氏金銀", "生產部"],
+      ["0539", "阮氏然", "生產部"], ["0547", "團氏月", "生產部"], ["0548", "河氏燕", "生產部"],
+      ["0555", "押氏通", "生產部"], ["0660", "范氏黃秋", "生產部"], ["0661", "陳氏心", "生產部"],
+      ["0662", "范氏梅", "生產部"]
+    ];
+
+    function renderTable() {
+      const tbody = document.getElementById("employeeTable");
+      tbody.innerHTML = "";
+      employees.forEach(([id, name, dept]) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${id}</td>
+          <td>${name}</td>
+          <td>${dept}</td>
+          <td>未點名</td>
+          <td class="status-buttons">
+            <button>出席</button>
+            <button>請假</button>
+            <button>曠職</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
+
+    function updateDateTime() {
+      const now = new Date();
+      const weekdays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+      const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${weekdays[now.getDay()]}`;
+      const timeStr = now.toLocaleTimeString("zh-TW", { hour12: false });
+      document.getElementById("currentDate").textContent = dateStr;
+      document.getElementById("currentTime").textContent = timeStr;
+    }
+
+    function resetSigner() {
+      document.getElementById("signerSelect").value = "";
+      document.getElementById("currentSigner").textContent = "尚未選擇";
+      document.getElementById("signTime").textContent = "--:--";
+    }
+
+    function setSession(text) {
+      document.getElementById("session").textContent = text + "點名";
+    }
+
+    document.getElementById("signerSelect").addEventListener("change", (e) => {
+      const name = e.target.value;
+      document.getElementById("currentSigner").textContent = name || "尚未選擇";
+      document.getElementById("signTime").textContent = new Date().toLocaleTimeString("zh-TW", { hour12: false });
+    });
+
+    renderTable();
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
   </script>
 </body>
+
 </html>
