@@ -1,223 +1,210 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>每日員工點名系統</title>
   <style>
     body {
-      font-family: "Microsoft JhengHei", sans-serif;
-      background: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft JhengHei', sans-serif;
       margin: 0;
       padding: 0;
+      background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+      min-height: 100vh;
     }
     .container {
       max-width: 1000px;
       margin: auto;
+      padding: 2rem;
       background: white;
-      padding: 20px;
-      margin-top: 20px;
       border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
     h1 {
       text-align: center;
+      color: #1f2937;
+      margin-bottom: 1rem;
     }
-    .info {
+    .toolbar {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 20px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
     }
-    .btn-area {
-      margin: 10px 0;
-      display: flex;
-      gap: 10px;
+    .toolbar select, .toolbar button {
+      margin: 0.5rem 0.25rem;
+      padding: 0.5rem;
     }
-    select, button {
-      padding: 6px 10px;
-      font-size: 14px;
+    .add-employee-form input {
+      margin-right: 0.5rem;
+      padding: 0.5rem;
+    }
+    .add-employee-form button {
+      padding: 0.5rem 1rem;
     }
     table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 1rem;
     }
     th, td {
+      padding: 0.5rem;
       border: 1px solid #ccc;
-      padding: 8px;
       text-align: center;
     }
-    .status-btns button {
-      margin: 2px;
+    .status-present {
+      color: green;
+      font-weight: bold;
     }
-    .highlight {
-      background: #e5e7eb;
+    .status-leave {
+      color: blue;
+      font-weight: bold;
+    }
+    .status-absent {
+      color: red;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>每日員工點名系統</h1>
-    <div class="info">
-      <div>📅 日期：<span id="todayDate"></span> <span id="currentTime"></span></div>
+    <div class="toolbar">
       <div>
-        👤 點名人：
-        <select id="rollcallBy">
+        點名時段：
+        <select id="session">
+          <option value="上午">上午</option>
+          <option value="中午">中午</option>
+        </select>
+        點名人：
+        <select id="recorder">
           <option value="陳婷媚">陳婷媚</option>
           <option value="陳姿蓉">陳姿蓉</option>
           <option value="陳佳宜">陳佳宜</option>
           <option value="吳淑蓮">吳淑蓮</option>
         </select>
+        <button onclick="exportCSV()">匯出CSV</button>
+        <button onclick="window.print()">匯出PDF</button>
       </div>
-      <div>
-        🕒 時段：
-        <select id="rollcallSession">
-          <option value="上午">上午</option>
-          <option value="中午">中午</option>
-        </select>
-      </div>
+      <form class="add-employee-form" onsubmit="addEmployee(event)">
+        <input id="newId" placeholder="員工編號" required />
+        <input id="newName" placeholder="員工姓名" required />
+        <input id="newDept" placeholder="部門" required />
+        <button type="submit">新增員工</button>
+      </form>
     </div>
-
-    <div class="btn-area">
-      <button onclick="exportPDF()">📄 匯出 PDF</button>
-      <button onclick="exportCSV()">📁 匯出 CSV</button>
-    </div>
-
     <table>
       <thead>
         <tr>
           <th>員工編號</th>
           <th>姓名</th>
           <th>部門</th>
+          <th>出席</th>
+          <th>請假</th>
+          <th>曠職</th>
           <th>狀態</th>
-          <th>操作</th>
+          <th>刪除</th>
         </tr>
       </thead>
       <tbody id="employeeTable"></tbody>
     </table>
   </div>
+<script>
+const employees = JSON.parse(localStorage.getItem("employees")) || [
+  { id: "0011", name: "邱瑞統", dept: "模發部" },
+  { id: "0004", name: "陳水波", dept: "模發部" },
+  { id: "0400", name: "趙玉芬", dept: "模發部" },
+  { id: "0405", name: "葉倢羽", dept: "模發部" }
+]; // 可擴充完整名單
 
-  <script>
-    const employees = [
-      { id: "0011", name: "邱瑞統", dept: "模發部" },
-      { id: "0004", name: "陳水波", dept: "模發部" },
-      { id: "0400", name: "趙玉芬", dept: "模發部" },
-      { id: "0405", name: "葉倢羽", dept: "模發部" },
-      { id: "0494", name: "王朋楹", dept: "模發部" },
-      { id: "0531", name: "許嘉紓", dept: "模發部" },
-      { id: "0538", name: "何文泰", dept: "模發部" },
-      { id: "0328", name: "賴榮樂", dept: "基材部" },
-      { id: "0495", name: "賴致錡", dept: "基材部" },
-      { id: "0507", name: "阿發", dept: "基材部" },
-      { id: "0517", name: "黎文全", dept: "基材部" },
-      { id: "0541", name: "范庭進", dept: "基材部" },
-      { id: "0559", name: "阮維峰", dept: "基材部" },
-      { id: "0663", name: "伸迪", dept: "基材部" },
-      { id: "0042", name: "蕭景池", dept: "包裝部" },
-      { id: "0016", name: "施妙菁", dept: "包裝部" },
-      { id: "V002", name: "李慧玲", dept: "包裝部" },
-      { id: "0003", name: "吳淑美", dept: "包裝部" },
-      { id: "0152", name: "陳媛玲", dept: "包裝部" },
-      { id: "0287", name: "曹巧伶", dept: "包裝部" },
-      { id: "0482", name: "朱珮菱", dept: "包裝部" },
-      { id: "0511", name: "文氏雪貞", dept: "包裝部" },
-      { id: "0012", name: "黃秀鉗", dept: "生產部" },
-      { id: "0226", name: "阮氏李", dept: "生產部" },
-      { id: "0402", name: "蔡鴻模", dept: "管理部" },
-      { id: "0017", name: "洪姃廷", dept: "管理部" },
-      { id: "0297", name: "陳淑鸞", dept: "管理部" },
-      { id: "0304", name: "吳淑蓮", dept: "生產部" },
-      { id: "0473", name: "陳婷媚", dept: "管理部" },
-      { id: "0514", name: "陳姿蓉", dept: "管理部" },
-      { id: "0515", name: "陳佳宜", dept: "生產部" },
-      { id: "0552", name: "陳允薰", dept: "生產部" },
-      { id: "0399", name: "豆氏劉", dept: "生產部" },
-      { id: "0465", name: "施俞宣", dept: "生產部" },
-      { id: "0479", name: "希蒂", dept: "生產部" },
-      { id: "0487", name: "尤妮", dept: "生產部" },
-      { id: "0513", name: "斐氏秋", dept: "生產部" },
-      { id: "0519", name: "曹孜孜", dept: "生產部" },
-      { id: "0520", name: "莊凡潔", dept: "生產部" },
-      { id: "0526", name: "黃氏玲", dept: "生產部" },
-      { id: "0527", name: "阮氏夢", dept: "生產部" },
-      { id: "0533", name: "陶氏金銀", dept: "生產部" },
-      { id: "0539", name: "阮氏然", dept: "生產部" },
-      { id: "0547", name: "團氏月", dept: "生產部" },
-      { id: "0548", name: "河氏燕", dept: "生產部" },
-      { id: "0555", name: "押氏通", dept: "生產部" },
-      { id: "0660", name: "范氏黃秋", dept: "生產部" },
-      { id: "0661", name: "陳氏心", dept: "生產部" },
-      { id: "0662", name: "范氏梅", dept: "生產部" }
-    ];
+const statusData = JSON.parse(localStorage.getItem("statusData")) || {};
 
-    function renderTable() {
-      const tbody = document.getElementById("employeeTable");
-      tbody.innerHTML = "";
-      employees.forEach(emp => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${emp.id}</td>
-          <td>${emp.name}</td>
-          <td>${emp.dept}</td>
-          <td id="status-${emp.id}">未點名</td>
-          <td class="status-btns">
-            <button onclick="setStatus('${emp.id}', '出席')">出席</button>
-            <button onclick="setStatus('${emp.id}', '請假')">請假</button>
-            <button onclick="setStatus('${emp.id}', '曠職')">曠職</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
+function saveAll() {
+  localStorage.setItem("employees", JSON.stringify(employees));
+  localStorage.setItem("statusData", JSON.stringify(statusData));
+}
 
-    function setStatus(id, status) {
-      document.getElementById(`status-${id}`).textContent = status;
-      saveData();
-    }
+function renderTable() {
+  const tbody = document.getElementById("employeeTable");
+  tbody.innerHTML = "";
+  const session = document.getElementById("session").value;
+  employees.forEach(emp => {
+    const row = document.createElement("tr");
+    const currentStatus = statusData[`${session}_${emp.id}`] || "";
+    row.innerHTML = `
+      <td>${emp.id}</td>
+      <td>${emp.name}</td>
+      <td>${emp.dept}</td>
+      <td><button onclick="setStatus('${emp.id}', 'present')">出席</button></td>
+      <td><button onclick="setStatus('${emp.id}', 'leave')">請假</button></td>
+      <td><button onclick="setStatus('${emp.id}', 'absent')">曠職</button></td>
+      <td class="status-${currentStatus}">${getLabel(currentStatus)}</td>
+      <td><button onclick="deleteEmployee('${emp.id}')">刪除</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+}
 
-    function saveData() {
-      const data = [];
-      employees.forEach(emp => {
-        const status = document.getElementById(`status-${emp.id}`).textContent;
-        data.push({ id: emp.id, name: emp.name, dept: emp.dept, status });
-      });
-      localStorage.setItem("rollcallData", JSON.stringify(data));
-    }
+function setStatus(id, status) {
+  const session = document.getElementById("session").value;
+  statusData[`${session}_${id}`] = status;
+  saveAll();
+  renderTable();
+}
 
-    function loadData() {
-      const saved = JSON.parse(localStorage.getItem("rollcallData") || "[]");
-      saved.forEach(item => {
-        const cell = document.getElementById(`status-${item.id}`);
-        if (cell) cell.textContent = item.status;
-      });
-    }
-
-    function exportCSV() {
-      let csv = "編號,姓名,部門,狀態\n";
-      employees.forEach(emp => {
-        const status = document.getElementById(`status-${emp.id}`).textContent;
-        csv += `${emp.id},${emp.name},${emp.dept},${status}\n`;
-      });
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const today = new Date().toISOString().slice(0, 10);
-      link.setAttribute("href", URL.createObjectURL(blob));
-      link.setAttribute("download", `${today}_點名紀錄.csv`);
-      link.click();
-    }
-
-    function exportPDF() {
-      window.print();
-    }
-
-    function updateClock() {
-      const now = new Date();
-      document.getElementById("todayDate").textContent = now.toLocaleDateString("zh-TW");
-      document.getElementById("currentTime").textContent = now.toLocaleTimeString("zh-TW");
-    }
-
-    setInterval(updateClock, 1000);
+function addEmployee(e) {
+  e.preventDefault();
+  const id = document.getElementById("newId").value.trim();
+  const name = document.getElementById("newName").value.trim();
+  const dept = document.getElementById("newDept").value.trim();
+  if (id && name && dept) {
+    employees.push({ id, name, dept });
+    saveAll();
     renderTable();
-    loadData();
-  </script>
+    e.target.reset();
+  }
+}
+
+function deleteEmployee(id) {
+  const idx = employees.findIndex(emp => emp.id === id);
+  if (idx > -1) {
+    employees.splice(idx, 1);
+    delete statusData[`上午_${id}`];
+    delete statusData[`中午_${id}`];
+    saveAll();
+    renderTable();
+  }
+}
+
+function getLabel(status) {
+  switch (status) {
+    case "present": return "出席";
+    case "leave": return "請假";
+    case "absent": return "曠職";
+    default: return "";
+  }
+}
+
+function exportCSV() {
+  const session = document.getElementById("session").value;
+  const recorder = document.getElementById("recorder").value;
+  const now = new Date();
+  const date = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+  let csv = `日期,點名時段,點名人,員工編號,姓名,部門,狀態\n`;
+  employees.forEach(emp => {
+    const stat = getLabel(statusData[`${session}_${emp.id}`] || "");
+    csv += `${date},${session},${recorder},${emp.id},${emp.name},${emp.dept},${stat}\n`;
+  });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${date}_${session}_點名紀錄.csv`;
+  link.click();
+}
+
+// 初始化
+renderTable();
+document.getElementById("session").addEventListener("change", renderTable);
+</script>
 </body>
 </html>
