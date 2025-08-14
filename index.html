@@ -1,179 +1,172 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>每日員工點名系統</title>
   <style>
-    body { font-family: sans-serif; margin: 20px; }
-    h1 { text-align: center; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    .green { background-color: #c8e6c9; }
-    .red { background-color: #ffcdd2; }
-    .blue { background-color: #bbdefb; }
-    .controls { margin: 10px 0; }
-    .controls button { margin-right: 10px; }
+    body {
+      font-family: sans-serif;
+      background-color: #eef3fd;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    input, select, button {
+      padding: 8px;
+      font-size: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    .status-present {
+      background-color: #d4edda;
+    }
+    .status-absent {
+      background-color: #f8d7da;
+    }
+    .status-leave {
+      background-color: #d1ecf1;
+    }
   </style>
 </head>
 <body>
   <h1>每日員工點名系統</h1>
   <div class="controls">
-    日期時間：<span id="datetime"></span>
-    <br><br>
-    點名人：
-    <select id="attender">
-      <option value="陳婷媚">陳婷媚</option>
-      <option value="陳姿蓉">陳姿蓉</option>
-      <option value="陳佳宜">陳佳宜</option>
-      <option value="吳淑蓮">吳淑蓮</option>
-    </select>
-    <br><br>
-    點名時段：
-    <select id="session">
-      <option value="上午">上午</option>
-      <option value="中午">中午</option>
-    </select>
-    <br><br>
-    <button onclick="addEmployee()">新增員工</button>
+    <label>點名時段：
+      <select id="session">
+        <option>上午</option>
+        <option>中午</option>
+      </select>
+    </label>
+    <label>點名人：
+      <select id="checker">
+        <option>陳婷婷</option>
+        <option>王小明</option>
+      </select>
+    </label>
+    <button onclick="exportCSV()">匯出CSV</button>
     <button onclick="exportPDF()">匯出PDF</button>
   </div>
-  <table id="attendanceTable">
+
+  <div class="controls">
+    <input type="text" id="newId" placeholder="員工編號" />
+    <input type="text" id="newName" placeholder="員工姓名" />
+    <input type="text" id="newDept" placeholder="部門" />
+    <button onclick="addEmployee()">新增員工</button>
+  </div>
+
+  <table>
     <thead>
       <tr>
         <th>員工編號</th>
         <th>姓名</th>
         <th>部門</th>
-        <th>出席狀態</th>
-        <th>操作</th>
+        <th>出席</th>
+        <th>請假</th>
+        <th>曠職</th>
+        <th>狀態</th>
+        <th>刪除</th>
       </tr>
     </thead>
-    <tbody id="employeeList"></tbody>
+    <tbody id="employeeTable"></tbody>
   </table>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <script>
-    const employees = [
-      { id: "0011", name: "邱瑞統", dept: "模發部" },
-      { id: "0004", name: "陳水波", dept: "模發部" },
-      { id: "0400", name: "趙玉芬", dept: "模發部" },
-      { id: "0405", name: "葉倢羽", dept: "模發部" },
-      { id: "0494", name: "王朋楹", dept: "模發部" },
-      { id: "0531", name: "許嘉紓", dept: "模發部" },
-      { id: "0538", name: "何文泰", dept: "模發部" },
-      { id: "0328", name: "賴榮樂", dept: "基材部" },
-      { id: "0495", name: "賴致錡", dept: "基材部" },
-      { id: "0507", name: "阿發", dept: "基材部" },
-      { id: "0517", name: "黎文全", dept: "基材部" },
-      { id: "0541", name: "范庭進", dept: "基材部" },
-      { id: "0559", name: "阮維峰", dept: "基材部" },
-      { id: "0663", name: "伸迪", dept: "基材部" },
-      { id: "0042", name: "蕭景池", dept: "包裝部" },
-      { id: "0016", name: "施妙菁", dept: "包裝部" },
-      { id: "V002", name: "李慧玲", dept: "包裝部" },
-      { id: "0003", name: "吳淑美", dept: "包裝部" },
-      { id: "0152", name: "陳媛玲", dept: "包裝部" },
-      { id: "0287", name: "曹巧伶", dept: "包裝部" },
-      { id: "0482", name: "朱珮菱", dept: "包裝部" },
-      { id: "0511", name: "文氏雪貞", dept: "包裝部" },
-      { id: "0012", name: "黃秀鉗", dept: "生產部" },
-      { id: "0226", name: "阮氏李", dept: "生產部" },
-      { id: "0402", name: "蔡鴻模", dept: "管理部" },
-      { id: "0017", name: "洪姃廷", dept: "管理部" },
-      { id: "0297", name: "陳淑鸞", dept: "管理部" },
-      { id: "0304", name: "吳淑蓮", dept: "生產部" },
-      { id: "0473", name: "陳婷媚", dept: "管理部" },
-      { id: "0514", name: "陳姿蓉", dept: "管理部" },
-      { id: "0515", name: "陳佳宜", dept: "生產部" },
-      { id: "0552", name: "陳允薰", dept: "生產部" },
-      { id: "0399", name: "豆氏劉", dept: "生產部" },
-      { id: "0465", name: "施俞宣", dept: "生產部" },
-      { id: "0479", name: "希蒂", dept: "生產部" },
-      { id: "0487", name: "尤妮", dept: "生產部" },
-      { id: "0513", name: "斐氏秋", dept: "生產部" },
-      { id: "0519", name: "曹孜孜", dept: "生產部" },
-      { id: "0520", name: "莊凡潔", dept: "生產部" },
-      { id: "0526", name: "黃氏玲", dept: "生產部" },
-      { id: "0527", name: "阮氏夢", dept: "生產部" },
-      { id: "0533", name: "陶氏金銀", dept: "生產部" },
-      { id: "0539", name: "阮氏然", dept: "生產部" },
-      { id: "0547", name: "團氏月", dept: "生產部" },
-      { id: "0548", name: "河氏燕", dept: "生產部" },
-      { id: "0555", name: "押氏通", dept: "生產部" },
-      { id: "0660", name: "范氏黃秋", dept: "生產部" },
-      { id: "0661", name: "陳氏心", dept: "生產部" },
-      { id: "0662", name: "范氏梅", dept: "生產部" }
-    ];
+    const table = document.getElementById('employeeTable');
 
-    const statusColors = { 出席: 'green', 曠職: 'red', 請假: 'blue' };
-    const attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+    const saveData = () => {
+      localStorage.setItem('employees', JSON.stringify(employeeList));
+    };
 
-    function renderTable() {
-      const tbody = document.getElementById('employeeList');
-      tbody.innerHTML = '';
-      employees.forEach(e => {
-        const row = document.createElement('tr');
-        const status = attendance[e.id] || '';
-        row.innerHTML = `
-          <td>${e.id}</td>
-          <td>${e.name}</td>
-          <td>${e.dept}</td>
-          <td class="${statusColors[status] || ''}">${status}</td>
-          <td>
-            <button onclick="markStatus('${e.id}', '出席')">出席</button>
-            <button onclick="markStatus('${e.id}', '請假')">請假</button>
-            <button onclick="markStatus('${e.id}', '曠職')">曠職</button>
-            <button onclick="removeEmployee('${e.id}')">刪除</button>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
+    const loadData = () => {
+      const data = localStorage.getItem('employees');
+      if (data) employeeList = JSON.parse(data);
+    };
 
-    function markStatus(id, status) {
-      attendance[id] = status;
-      localStorage.setItem('attendance', JSON.stringify(attendance));
+    let employeeList = [];
+    loadData();
+    renderTable();
+
+    function addEmployee() {
+      const id = document.getElementById('newId').value.trim();
+      const name = document.getElementById('newName').value.trim();
+      const dept = document.getElementById('newDept').value.trim();
+      if (!id || !name || !dept) return alert('請輸入完整資訊');
+      employeeList.push({ id, name, dept, status: '' });
+      saveData();
       renderTable();
     }
 
-    function addEmployee() {
-      const id = prompt("請輸入員工編號：");
-      const name = prompt("請輸入員工姓名：");
-      const dept = prompt("請輸入部門名稱：");
-      if (id && name && dept) {
-        employees.push({ id, name, dept });
+    function renderTable() {
+      table.innerHTML = '';
+      employeeList.forEach((emp, i) => {
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+          <td>${emp.id}</td>
+          <td>${emp.name}</td>
+          <td>${emp.dept}</td>
+          <td><input type="radio" name="status${i}" onclick="setStatus(${i}, '出席')"></td>
+          <td><input type="radio" name="status${i}" onclick="setStatus(${i}, '請假')"></td>
+          <td><input type="radio" name="status${i}" onclick="setStatus(${i}, '曠職')"></td>
+          <td class="status">${emp.status}</td>
+          <td><button onclick="deleteEmp(${i})">刪除</button></td>
+        `;
+
+        if (emp.status === '出席') row.querySelector('.status').classList.add('status-present');
+        if (emp.status === '請假') row.querySelector('.status').classList.add('status-leave');
+        if (emp.status === '曠職') row.querySelector('.status').classList.add('status-absent');
+
+        table.appendChild(row);
+      });
+    }
+
+    function setStatus(index, status) {
+      employeeList[index].status = status;
+      saveData();
+      renderTable();
+    }
+
+    function deleteEmp(index) {
+      if (confirm('確定刪除？')) {
+        employeeList.splice(index, 1);
+        saveData();
         renderTable();
       }
     }
 
-    function removeEmployee(id) {
-      const index = employees.findIndex(e => e.id === id);
-      if (index >= 0) {
-        employees.splice(index, 1);
-        delete attendance[id];
-        localStorage.setItem('attendance', JSON.stringify(attendance));
-        renderTable();
-      }
+    function exportCSV() {
+      let csv = '員工編號,姓名,部門,狀態\n';
+      employeeList.forEach(emp => {
+        csv += `${emp.id},${emp.name},${emp.dept},${emp.status}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `點名報表_${new Date().toLocaleDateString()}.csv`;
+      a.click();
     }
 
     function exportPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.text("每日點名紀錄", 10, 10);
-      let y = 20;
-      employees.forEach(e => {
-        const status = attendance[e.id] || '';
-        doc.text(`${e.id} ${e.name} ${e.dept} ${status}`, 10, y);
-        y += 10;
-      });
-      doc.save("點名紀錄.pdf");
+      alert('PDF 匯出功能尚未實作（可後續補上 jsPDF）');
     }
-
-    function updateTime() {
-      document.getElementById('datetime').innerText = new Date().toLocaleString();
-    }
-
-    updateTime();
-    renderTable();
-    setInterval(updateTime, 1000);
   </script>
 </body>
 </html>
